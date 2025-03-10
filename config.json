@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "file-finder-mcp": {
+      "args": [
+        "python",
+        "server.py"
+      ],
+      "command": "python",
+      "autoApprove": [],
+      "disabled": false
+    }
+  }
+}
