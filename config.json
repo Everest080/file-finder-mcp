@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "file-finder-mcp": {
-      "args": [
-        "python",
-        "server.py"
-      ],
-      "command": "python",
+      "args": ["python", "server.py", "--port", "5000"],
+      "command": "python server.py",
       "autoApprove": [],
       "disabled": false
     }

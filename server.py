@@ -1,51 +1,45 @@
+"""
+File Finder MCP Server
+Запускается локально, ищет файлы по фрагменту пути и возвращает результат в формате JSON.
+Результат содержит: имя файла, абсолютный путь, размер файла (в байтах) и дату создания.
+"""
+
 import os
+import datetime
+import argparse
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-def find_files(query, search_paths=None, max_results=100):
-    """
-    Search for files with an exact name match in the specified search paths.
-    """
-    if search_paths is None:
-        search_paths = [f"{d}:/" for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{d}:/")]
-
-    result = []
-    print(f"Searching for: {query} in {search_paths}")  # Debugging
-
-    for search_path in search_paths:
-        for root, dirs, files in os.walk(search_path):
-            try:
-                for file in files:
-                    if query.lower() == file.lower():  # Exact match only
-                        file_path = os.path.join(root, file)
-                        file_info = {
-                            "name": file,
-                            "path": file_path,
-                            "size": os.path.getsize(file_path),
-                            "created_at": os.path.getctime(file_path),
-                        }
-                        result.append(file_info)
-                        print(f"Found: {file_info}")  # Debugging
-
-                        if len(result) >= max_results:
-                            return result  # Stop early if max results reached
-            except (PermissionError, FileNotFoundError):
-                continue  # Skip directories with permission issues
-
-    return result
-
 @app.route('/search', methods=['GET'])
 def search_files():
-    """
-    API endpoint to search for files by exact name.
-    """
-    query = request.args.get('q', '').strip()
-    if not query:
-        return jsonify({"error": "Query parameter 'q' is required"}), 400
+    fragment = request.args.get('fragment')
+    if not fragment:
+        return jsonify({"error": "Отсутствует параметр 'fragment'"}), 400
 
-    results = find_files(query)
+    results = []
+    # Поиск файлов, начиная с текущей директории.
+    for root, dirs, files in os.walk("."):
+        for file in files:
+            if fragment.lower() in file.lower():
+                file_path = os.path.join(root, file)
+                try:
+                    stats = os.stat(file_path)
+                    size = stats.st_size
+                    creation_time = datetime.datetime.fromtimestamp(stats.st_ctime).isoformat()
+                except Exception as e:
+                    size = None
+                    creation_time = None
+                results.append({
+                    "filename": file,
+                    "path": os.path.abspath(file_path),
+                    "size": size,
+                    "creation_date": creation_time
+                })
     return jsonify(results)
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="File Finder MCP Server")
+    parser.add_argument('--port', type=int, default=5000, help="Порт для запуска сервера")
+    args = parser.parse_args()
+    app.run(host="0.0.0.0", port=args.port)
