@@ -4,6 +4,9 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 def find_files(query, search_paths=None, max_results=100):
+    """
+    Search for files with an exact name match in the specified search paths.
+    """
     if search_paths is None:
         search_paths = [f"{d}:/" for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{d}:/")]
 
@@ -14,7 +17,7 @@ def find_files(query, search_paths=None, max_results=100):
         for root, dirs, files in os.walk(search_path):
             try:
                 for file in files:
-                    if query.lower() in file.lower():
+                    if query.lower() == file.lower():  # Exact match only
                         file_path = os.path.join(root, file)
                         file_info = {
                             "name": file,
@@ -34,7 +37,10 @@ def find_files(query, search_paths=None, max_results=100):
 
 @app.route('/search', methods=['GET'])
 def search_files():
-    query = request.args.get('q', '')
+    """
+    API endpoint to search for files by exact name.
+    """
+    query = request.args.get('q', '').strip()
     if not query:
         return jsonify({"error": "Query parameter 'q' is required"}), 400
 
@@ -42,4 +48,4 @@ def search_files():
     return jsonify(results)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
